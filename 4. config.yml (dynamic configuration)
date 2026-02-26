@@ -1,0 +1,29 @@
+http:
+  routers:
+    traefik-secure:
+      rule: "Host(`traefik.ulamaify.org`)"
+      entryPoints:
+        - https
+      service: api@internal
+      tls:
+        certResolver: cloudflare
+      middlewares:
+        - default-headers
+        - auth
+
+  middlewares:
+    auth:
+      basicAuth:
+        users:
+          # Replace with your real USER:HASH later
+          - "USER:REPLACE_WITH_HASH"
+
+    default-headers:
+      headers:
+        frameDeny: true
+        contentTypeNosniff: true
+        browserXssFilter: true
+        forceSTSHeader: true
+        stsIncludeSubdomains: true
+        stsPreload: true
+        stsSeconds: 31536000
