@@ -1,0 +1,49 @@
+services:
+  traefik:
+    image: traefik:latest
+    container_name: traefik
+    restart: unless-stopped
+
+    command:
+      - "--configFile=/traefik.yml"
+
+    security_opt:
+      - no-new-privileges:true
+
+    networks:
+      - proxy
+
+    ports:
+      - "80:80"
+      - "443:443"
+
+    environment:
+      # Cloudflare API Token must be supplied in production
+      - CF_DNS_API_TOKEN=CHANGEME
+
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./data/traefik.yml:/traefik.yml:ro
+      - ./data/acme.json:/acme.json
+      - ./data/config.yml:/config.yml:ro
+
+    labels:
+      - "traefik.enable=true"
+
+      # Redirect HTTP → HTTPS
+      - "traefik.http.routers.traefik.entrypoints=http"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.ulamaify.org`)"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+      - "traefik.http.routers.traefik.middlewares=redirect-to-https"
+
+      # Main HTTPS Router
+      - "traefik.http.routers.traefik-secure.entrypoints=https"
+      - "traefik.http.routers.traefik-secure.rule=Host(`traefik.ulamaify.org`)"
+      - "traefik.http.routers.traefik-secure.tls=true"
+      - "traefik.http.routers.traefik-secure.tls.certresolver=cloudflare"
+      - "traefik.http.routers.traefik-secure.service=api@internal"
+
+networks:
+  proxy:
+    external: true
